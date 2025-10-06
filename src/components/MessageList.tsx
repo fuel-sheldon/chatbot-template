@@ -3,13 +3,8 @@ import { motion } from "framer-motion";
 import { MessageItem } from "./MessageItem";
 import { useChatStore } from "../store/chatStore";
 
-interface MessageListProps {
-  theme: "light" | "dark";
-}
-
-export const MessageList: React.FC<MessageListProps> = ({ theme }) => {
-  const { messages, isLoading } = useChatStore();
-  console.log(messages);
+export const MessageList: React.FC = () => {
+  const { messages, isLoading, theme } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -26,7 +21,7 @@ export const MessageList: React.FC<MessageListProps> = ({ theme }) => {
     <div className={`flex-1 overflow-y-auto p-4 ${themeClasses}`}>
       <div className="space-y-4">
         {messages.map((message) => (
-          <MessageItem key={message.id} message={message} theme={theme} />
+          <MessageItem key={message.id} message={message} />
         ))}
 
         {isLoading && (

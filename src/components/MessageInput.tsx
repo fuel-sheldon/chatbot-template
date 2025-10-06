@@ -5,9 +5,9 @@ import { Send, Paperclip, X } from "lucide-react";
 import { useChatStore } from "../store/chatStore";
 import { generateBotResponse, validateFile } from "../utils";
 import { FILE_CONSTRAINTS, ERROR_MESSAGES } from "../constants";
+import { useToast } from "./Toast";
 
 interface MessageInputProps {
-  theme: "light" | "dark";
   allowUpload?: boolean;
 }
 
@@ -16,7 +16,6 @@ interface FormData {
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
-  theme,
   allowUpload = true,
 }) => {
   const {
@@ -26,10 +25,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     clearFiles,
     addFile,
     removeFile,
+    theme,
   } = useChatStore();
   const { register, handleSubmit, reset, watch } = useForm<FormData>();
   const messageValue = watch("message", "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   const handleFileSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,14 +41,24 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         if (validation.valid) {
           if (uploadedFiles.length < FILE_CONSTRAINTS.MAX_FILES) {
             addFile(file);
+            addToast({
+              type: "success",
+              title: "File uploaded",
+              message: `${file.name} has been added successfully`,
+            });
           } else {
-            // Better error handling - could be replaced with toast notification
-            console.warn(ERROR_MESSAGES.MAX_FILES_EXCEEDED);
-            alert(ERROR_MESSAGES.MAX_FILES_EXCEEDED);
+            addToast({
+              type: "warning",
+              title: "Upload limit reached",
+              message: ERROR_MESSAGES.MAX_FILES_EXCEEDED,
+            });
           }
         } else {
-          console.warn(validation.error);
-          alert(validation.error);
+          addToast({
+            type: "error",
+            title: "Upload failed",
+            message: validation.error,
+          });
         }
       });
 
@@ -56,7 +67,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         fileInputRef.current.value = "";
       }
     },
-    [uploadedFiles.length, addFile]
+    [uploadedFiles.length, addFile, addToast]
   );
 
   const handleRemoveFile = useCallback(

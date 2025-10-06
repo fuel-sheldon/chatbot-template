@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Star } from "lucide-react";
 import { useChatStore } from "../store/chatStore";
 import { FeedbackFormData } from "../types";
+import { useToast } from "./Toast";
 
 interface FeedbackModalProps {
   theme: "light" | "dark";
@@ -11,16 +12,42 @@ interface FeedbackModalProps {
 
 export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
   const { showFeedbackModal, hideFeedbackModal } = useChatStore();
-  const { register, handleSubmit, reset, watch, setValue } =
-    useForm<FeedbackFormData>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FeedbackFormData>({
+    mode: "onBlur", // Validate on blur for better UX
+  });
   const rating = watch("rating", 0);
+  const comments = watch("comments", "");
+  const { addToast } = useToast();
+
+  // Check if form is valid for submission
+  const isFormValid = rating > 0 && Object.keys(errors).length === 0;
 
   const onSubmit = (data: FeedbackFormData) => {
     console.log("Feedback submitted:", data);
     // Here you would typically send the feedback to your backend
-    alert("Thank you for your feedback!");
+    addToast({
+      type: "success",
+      title: "Feedback submitted",
+      message: "Thank you for your feedback!",
+    });
     reset();
     hideFeedbackModal();
+  };
+
+  const onError = (errors: any) => {
+    console.log("Form validation errors:", errors);
+    addToast({
+      type: "error",
+      title: "Validation Error",
+      message: "Please check the form and try again",
+    });
   };
 
   const themeClasses =
@@ -57,13 +84,26 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={handleSubmit(onSubmit, onError)}
+                className="space-y-4"
+                noValidate
+              >
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    How would you rate your experience?
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      errors.rating ? "text-red-600 dark:text-red-400" : ""
+                    }`}
+                  >
+                    How would you rate your experience?{" "}
+                    <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex gap-1">
+                  <div
+                    className={`flex gap-1 p-2 rounded-lg transition-colors ${
+                      errors.rating ? "bg-red-50 dark:bg-red-900/20" : ""
+                    }`}
+                  >
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
@@ -84,8 +124,24 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                   </div>
                   <input
                     type="hidden"
-                    {...register("rating", { required: true, min: 1 })}
+                    {...register("rating", {
+                      required: "Please select a rating",
+                      min: {
+                        value: 1,
+                        message: "Please select at least 1 star",
+                      },
+                    })}
                   />
+                  {errors.rating && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 dark:text-red-400"
+                    >
+                      {errors.rating.message}
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Comments */}
@@ -94,11 +150,21 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                     Additional Comments (Optional)
                   </label>
                   <textarea
-                    {...register("comments")}
+                    {...register("comments", {
+                      maxLength: {
+                        value: 1000,
+                        message: "Comments must be less than 1000 characters",
+                      },
+                    })}
                     placeholder="Tell us more about your experience..."
                     className={`
-                      w-full p-3 rounded-lg resize-none
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      w-full p-3 rounded-lg resize-none border-2 transition-colors
+                      focus:outline-none focus:ring-2
+                      ${
+                        errors.comments
+                          ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                          : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                      }
                       ${
                         theme === "dark"
                           ? "bg-gray-700 text-white placeholder-gray-400"
@@ -107,20 +173,48 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                     `}
                     rows={4}
                   />
+                  {errors.comments && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 dark:text-red-400"
+                    >
+                      {errors.comments.message}
+                    </motion.div>
+                  )}
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
+                    {comments.length}/1000 characters
+                  </div>
                 </div>
 
-                {/* Email (Optional) */}
+                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Email (Optional)
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="email"
-                    {...register("email")}
+                    type="text"
+                    {...register("email", {
+                      required: "Email address is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Please enter a valid email address",
+                      },
+                      maxLength: {
+                        value: 254,
+                        message: "Email address is too long",
+                      },
+                    })}
                     placeholder="your@email.com"
                     className={`
-                      w-full p-3 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                      w-full p-3 rounded-lg border-2 transition-colors
+                      focus:outline-none focus:ring-2
+                      ${
+                        errors.email
+                          ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                          : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                      }
                       ${
                         theme === "dark"
                           ? "bg-gray-700 text-white placeholder-gray-400"
@@ -128,7 +222,31 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                       }
                     `}
                   />
+                  {errors.email && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-1 text-sm text-red-600 dark:text-red-400"
+                    >
+                      {errors.email.message}
+                    </motion.div>
+                  )}
                 </div>
+
+                {/* Form Status Helper */}
+                {!isFormValid && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+                  >
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      Please complete all required fields (rating and email) to
+                      submit your feedback.
+                    </p>
+                  </motion.div>
+                )}
 
                 {/* Submit Button */}
                 <div className="flex gap-3 pt-4">
@@ -141,7 +259,15 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ theme }) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    disabled={!isFormValid}
+                    className={`
+                      flex-1 px-4 py-2 rounded-lg transition-colors
+                      ${
+                        isFormValid
+                          ? "bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }
+                    `}
                   >
                     Submit Feedback
                   </button>

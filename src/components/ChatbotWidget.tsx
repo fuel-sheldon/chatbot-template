@@ -2,19 +2,20 @@ import React from "react";
 import { ChatBubble } from "./ChatBubble";
 import { ChatWindow } from "./ChatWindow";
 import { ChatbotWidgetProps } from "../types";
+import { useChatStore } from "../store/chatStore";
 
 export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   botName = "Assistant",
-  theme = "light",
   position = "bottom-right",
   allowUpload = true,
 }) => {
+  const { theme } = useChatStore();
+
   return (
     <>
       <ChatBubble position={position} theme={theme} />
       <ChatWindow
         botName={botName}
-        theme={theme}
         position={position}
         allowUpload={allowUpload}
       />

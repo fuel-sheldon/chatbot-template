@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ChatStore, Message, UploadedFile } from "../types";
-import { STORAGE_KEYS, ERROR_MESSAGES } from "../constants";
+import { STORAGE_KEYS } from "../constants";
+import { safeLocalStorage, handleError } from "../utils";
 
 export const useChatStore = create<ChatStore>()(
   persist(
@@ -9,6 +10,7 @@ export const useChatStore = create<ChatStore>()(
       // State
       isOpen: false,
       isFullscreen: false,
+      theme: "light" as "light" | "dark", // Will be synced with page theme
       messages: [],
       uploadedFiles: [],
       isLoading: false,
@@ -18,6 +20,9 @@ export const useChatStore = create<ChatStore>()(
       toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
       toggleFullscreen: () =>
         set((state) => ({ isFullscreen: !state.isFullscreen })),
+      toggleTheme: () =>
+        set((state) => ({ theme: state.theme === "light" ? "dark" : "light" })),
+      setTheme: (theme: "light" | "dark") => set({ theme }),
 
       addMessage: (messageData) => {
         const newMessage: Message = {
@@ -74,40 +79,51 @@ export const useChatStore = create<ChatStore>()(
       clearChat: () => set({ messages: [], uploadedFiles: [] }),
 
       loadChatFromStorage: () => {
+        const stored = safeLocalStorage.getItem(STORAGE_KEYS.CHATBOT_WIDGET);
+        if (!stored) return;
+
         try {
-          const stored = localStorage.getItem(STORAGE_KEYS.CHATBOT_WIDGET);
-          if (stored) {
-            const data = JSON.parse(stored) as { messages?: Message[] };
-            // Convert timestamp strings back to Date objects
-            const messages =
-              data.messages?.map((msg) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp),
-              })) || [];
-            set({ messages });
-          }
+          const data = JSON.parse(stored) as {
+            messages?: Message[];
+            theme?: "light" | "dark";
+          };
+
+          // Convert timestamp strings back to Date objects
+          const messages =
+            data.messages?.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })) || [];
+
+          set({
+            messages,
+            theme: data.theme || "light",
+          });
         } catch (error) {
-          console.error(ERROR_MESSAGES.LOAD_ERROR, error);
+          handleError(error, "loadChatFromStorage");
           // Clear corrupted data
-          localStorage.removeItem(STORAGE_KEYS.CHATBOT_WIDGET);
+          safeLocalStorage.removeItem(STORAGE_KEYS.CHATBOT_WIDGET);
         }
       },
 
       saveChatToStorage: () => {
-        try {
-          const { messages } = get();
-          localStorage.setItem(
-            STORAGE_KEYS.CHATBOT_WIDGET,
-            JSON.stringify({ messages })
+        const { messages, theme } = get();
+        const success = safeLocalStorage.setItem(
+          STORAGE_KEYS.CHATBOT_WIDGET,
+          JSON.stringify({ messages, theme })
+        );
+
+        if (!success) {
+          handleError(
+            new Error("Failed to save to localStorage"),
+            "saveChatToStorage"
           );
-        } catch (error) {
-          console.error(ERROR_MESSAGES.STORAGE_ERROR, error);
         }
       },
     }),
     {
       name: STORAGE_KEYS.CHATBOT_WIDGET,
-      partialize: (state) => ({ messages: state.messages }),
+      partialize: (state) => ({ messages: state.messages, theme: state.theme }),
     }
   )
 );

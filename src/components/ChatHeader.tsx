@@ -4,11 +4,11 @@ import { useChatStore } from "../store/chatStore";
 
 interface ChatHeaderProps {
   botName: string;
-  theme: "light" | "dark";
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ botName, theme }) => {
-  const { toggleChat, openFeedbackModal, toggleFullscreen } = useChatStore();
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ botName }) => {
+  const { toggleChat, openFeedbackModal, toggleFullscreen, theme } =
+    useChatStore();
 
   const themeClasses =
     theme === "dark"

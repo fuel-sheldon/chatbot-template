@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Paperclip, X } from "lucide-react";
 import { useChatStore } from "../store/chatStore";
 import { validateFile, formatFileSize } from "../utils";
+import { useToast } from "./Toast";
 
 interface FileUploadProps {
   theme: "light" | "dark";
@@ -21,6 +22,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const { uploadedFiles, addFile, removeFile } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { register } = useForm<FileUploadFormData>();
+  const { addToast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -30,11 +32,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (validation.valid) {
         if (uploadedFiles.length < 3) {
           addFile(file);
+          addToast({
+            type: "success",
+            title: "File uploaded",
+            message: `${file.name} has been added successfully`,
+          });
         } else {
-          alert("Maximum 3 files allowed");
+          addToast({
+            type: "warning",
+            title: "Upload limit reached",
+            message: "Maximum 3 files allowed",
+          });
         }
       } else {
-        alert(validation.error);
+        addToast({
+          type: "error",
+          title: "Upload failed",
+          message: validation.error,
+        });
       }
     });
 

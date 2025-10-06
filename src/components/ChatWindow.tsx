@@ -8,19 +8,23 @@ import { useChatStore } from "../store/chatStore";
 
 interface ChatWindowProps {
   botName: string;
-  theme: "light" | "dark";
   position: "bottom-right" | "bottom-left";
   allowUpload: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   botName,
-  theme,
   position,
   allowUpload,
 }) => {
-  const { isOpen, isFullscreen, loadChatFromStorage, addMessage, messages } =
-    useChatStore();
+  const {
+    isOpen,
+    isFullscreen,
+    theme,
+    loadChatFromStorage,
+    addMessage,
+    messages,
+  } = useChatStore();
 
   useEffect(() => {
     loadChatFromStorage();
@@ -71,9 +75,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               ${themeClasses}
             `}
           >
-            <ChatHeader botName={botName} theme={theme} />
-            <MessageList theme={theme} />
-            <MessageInput theme={theme} allowUpload={allowUpload} />
+            <ChatHeader botName={botName} />
+            <MessageList />
+            <MessageInput allowUpload={allowUpload} />
           </motion.div>
         )}
       </AnimatePresence>
