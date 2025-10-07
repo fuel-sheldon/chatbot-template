@@ -27,9 +27,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ botName }) => {
   };
 
   const handleCloseWithFeedback = () => {
-    // Open feedback modal before closing
+    // Open feedback modal - the modal will handle closing the chat after submission
     openFeedbackModal();
-    // Note: We don't close immediately, let user complete feedback first
   };
 
   return (

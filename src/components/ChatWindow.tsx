@@ -24,6 +24,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     loadChatFromStorage,
     addMessage,
     messages,
+    showFeedbackModal,
   } = useChatStore();
 
   useEffect(() => {
@@ -58,31 +59,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       : "bg-white border-gray-200";
 
   return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`
-              fixed ${positionClasses} z-40
-              ${sizeClasses}
-              ${
-                isFullscreen ? "rounded-none" : "rounded-lg"
-              } shadow-2xl border flex flex-col overflow-hidden
-              ${themeClasses}
-            `}
-          >
-            <ChatHeader botName={botName} />
-            <MessageList />
-            <MessageInput allowUpload={allowUpload} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <FeedbackModal theme={theme} />
-    </>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className={`
+            fixed ${positionClasses} z-40
+            ${sizeClasses}
+            ${
+              isFullscreen ? "rounded-none" : "rounded-lg"
+            } shadow-2xl border flex flex-col overflow-hidden
+            ${themeClasses}
+          `}
+        >
+          {showFeedbackModal ? (
+            <FeedbackModal theme={theme} inline={true} />
+          ) : (
+            <>
+              <ChatHeader botName={botName} />
+              <MessageList />
+              <MessageInput allowUpload={allowUpload} />
+            </>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
